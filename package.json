@@ -9,7 +9,12 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "testMatch": ["**/*.test.[jt]s?(x)"]
+    "transform": {
+      "^.+\\.(ts|js)x?$": "ts-jest"
+    },
+    "testMatch": [
+      "**/*.test.[jt]s?(x)"
+    ]
   },
   "repository": {
     "type": "git",
@@ -29,6 +34,7 @@
   },
   "homepage": "https://github.com/kenlane33/patchifier-js#readme",
   "devDependencies": {
+    "@jest/globals": "^29.5.0",
     "@types/jest": "^29.5.1",
     "@types/node": "^18.16.3",
     "jest": "^29.5.0",
