@@ -72,22 +72,23 @@ function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, unknown] {
 
 /**
  * 
- * Looks for special keys called __patchFunc in the patch object, and replaces the value with the result of the function.
+ * Looks for special {"__patchFunc":()=>any} objects in the patch object, and replaces each object with the result of its function.
  * 
- * @param wholeObj 
- * @param patch 
- * @param matchVal 
- * @returns 
+ * @param wholeObj - the whole object ONLY so that functions can access other parts of the object
+ * @param patch - a "patch" object that will have its {__patchFunc:()=>any} _objects_ replaced with the result of the function
+ * @param matchVal - the value that was matched in the original object to cause this match-patch to be applied
+ * @returns the patch object with each function object replaced with its result
  */
 function applyPatchFuncs( wholeObj:Obj_ish, patch: Obj_ish, matchVal: Val_ish  ): Obj_ish {
   const mtchs = [] as unknown[]
   function digForFuncs(obj: Obj_ish, parentObj?: Obj_ish, parentKey?: string) {
     Object.entries(obj).forEach(([key, val]) => {
       if (key==='__patchFunc') {
-        const [func, jsonParams] = parseStrFuncAndJsonParams(val as string)
-        if (func && parentObj && parentKey) { 
-          parentObj[parentKey] = func(matchVal, jsonParams, wholeObj)
-          mtchs.push([func, parentObj[parentKey], parentObj, parentKey, matchVal])
+        const [patchFunc, jsonParams] = parseStrFuncAndJsonParams(val as string) as [PatchFunc|null, unknown]
+        if (patchFunc && parentObj && parentKey) {
+          const copyVal = `{${Object.entries(parentObj[parentKey])[0].join(': ')}}`
+          parentObj[parentKey] = patchFunc(matchVal, jsonParams, wholeObj)
+          mtchs.push(`${patchFunc.name}(${jsonParams}) / parentObj[${parentKey}]=${copyVal} / parentObj[${parentKey}]=${parentObj[parentKey]}`)
         }
       }
       else if (isObject(val)) digForFuncs(val as Obj_ish, obj, key)
