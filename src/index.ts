@@ -70,7 +70,16 @@ function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, unknown] {
   return [func, parseParams]
 }
 
-function applyPatchFuncs(patch: Obj_ish, matchVal: Val_ish, wholeObj:Obj_ish ): Obj_ish {
+/**
+ * 
+ * Looks for special keys called __patchFunc in the patch object, and replaces the value with the result of the function.
+ * 
+ * @param wholeObj 
+ * @param patch 
+ * @param matchVal 
+ * @returns 
+ */
+function applyPatchFuncs( wholeObj:Obj_ish, patch: Obj_ish, matchVal: Val_ish  ): Obj_ish {
   const mtchs = [] as unknown[]
   function digForFuncs(obj: Obj_ish, parentObj?: Obj_ish, parentKey?: string) {
     Object.entries(obj).forEach(([key, val]) => {
@@ -86,16 +95,23 @@ function applyPatchFuncs(patch: Obj_ish, matchVal: Val_ish, wholeObj:Obj_ish ): 
   }
   digForFuncs(patch) 
   if (mtchs.length) console.log(mtchs)
-  return patch
+  return patch // for chaining if useful
 }
 
 export default function patchify(obj: Obj_ish, matchesToPatch: Patch[] = []): Obj_ish {
+  const objCopy = JSON.parse(JSON.stringify(obj)) //=
   for (const { match, patch } of [...patchify.defaultPatches, ...matchesToPatch]) {
+    console.log(patch)
+    console.log(match)
     const [matchObj,_matchKey,matchVal] = findObjMatch(obj, match) 
-    console.log(matchObj, matchVal)
+    console.log(!!matchObj, matchVal)
+    console.log(JSON.stringify(matchObj)+'||'+matchVal+'\n')
     if (matchObj) { 
-      const patch2 = applyPatchFuncs(patch, matchVal, obj) //= matchVal
-      obj = merge(JSON.parse(JSON.stringify(obj)), patch2, matchObj) as Obj_ish
+      const patchWFuncVals = applyPatchFuncs(obj, patch, matchVal) //= matchVal
+      console.log(patch)
+      console.log(patchWFuncVals)
+      obj = merge(patchWFuncVals, objCopy) as Obj_ish 
+      console.log(obj)
     }
   }
   return obj
@@ -148,8 +164,12 @@ function curly_vars_to_array(val: Val_ish, funcParams: Obj_ish) : (Obj_ish | Val
 }
 
 function get_val(...args:PatchFuncArgs) : PatchFuncRet {
-  const [_val, funcParams, wholeObj] = args 
-  return _get(wholeObj, funcParams) //=
+  const [_val, funcParams, wholeObj] = args
+  console.log(funcParams) 
+  console.log(wholeObj)
+  const val = _get(wholeObj, funcParams)
+  if (val === undefined) throw new Error(`get_val( ${funcParams} ) not found in ${JSON.stringify(wholeObj)}`)
+  return val //=
 }
 
 function regexp_matches(...args:PatchFuncArgs) : PatchFuncRet {
@@ -194,8 +214,7 @@ patchify.patchFuncs //=
   // },
   { match: 'llm._type:openai', 
     patch: {
-      override:null,
-      llm:{ _type: 777}//{ __patchFunc:'get_val("llm.override")' }
+      llm:{ _type: { __patchFunc:'get_val(llm.override)' } }
     }
   },
 
@@ -216,8 +235,9 @@ patchify.patchFuncs //=
 
 patchify(
   { llm: {
-    model_name: "text-davinci-003"},
-    override: 'FOOP',
+      model_name: "text-davinci-003",
+      override: 'FOOP',
+    },
     prompt:{template:'Answer questions as table rows, Q1:{q1}, Q2:{q2}, Q3:{q3}' }
   }
 ) //= 
