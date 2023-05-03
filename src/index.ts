@@ -7,68 +7,68 @@ function isObject(item: unknown): boolean {
   return (typeof item === 'object')
 }
 
-function parseStringAsJsonOrString(str: string): unknown {
+function safeJsonParse(str: string): unknown {
   try { return JSON.parse(str) }
   catch (e) { return str }
 }
 
+/**
+ * 
+ * Parse a string into a function name and json params, return the looked up function & JSON-parsed params.
+ * Example: parseStrFuncAndJsonParams('mapKeys({a:1})') => [ [Function:mapKeys], {a:1}]
+ * 
+ * @param str - a string that may contain a function name and/or json params in parens. Ex: 'get_val(a.b)', 'matches(/^fun/)'
+ * @returns 
+ */
 function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, unknown] {
   const funcName   = str.match(/^[a-zA-Z0-9_]+/)?.[0]
   const jsonParams = str.match(/\((.*)\)/)?.[1] || '{}' //=
   const func       = (funcName && patchify.patchFuncs[funcName]) || null //=
-  const parseParams = parseStringAsJsonOrString(jsonParams) //=
+  const parseParams = safeJsonParse(jsonParams) //=
   return [func, parseParams]
 }
 
 /**
  * 
- * Looks for special {"__patchFunc":()=>any} objects in the patch object, and replaces each object with the result of its function.
+ * Looks for special {"__patchFunc":()=>any} objects in the patch object, and replaces each object with the result of its function in place.
  * 
  * @param wholeObj - the whole object ONLY so that functions can access other parts of the object
- * @param patch - a "patch" object that will have its {__patchFunc:()=>any} _objects_ replaced with the result of the function
+ * @param patch - a "patch" object that will have its {__patchFunc:()=>any} _objects_ replaced (in place) with the result of the function
  * @param matchVal - the value that was matched in the original object to cause this match-patch to be applied
  * @returns the patch object with each function object replaced with its result
  */
 function applyPatchFuncs( wholeObj:Obj_ish, patch: Obj_ish, matchVal: Val_ish  ): Obj_ish {
-  const mtchs = [] as unknown[]
   function digForFuncs(obj: Obj_ish, parentObj?: Obj_ish, parentKey?: string) {
     Object.entries(obj).forEach(([key, val]) => {
       if (key==='__patchFunc') {
         const [patchFunc, jsonParams] = parseStrFuncAndJsonParams(val as string) as [PatchFunc|null, unknown]
         if (patchFunc && parentObj && parentKey) {
-          const copyVal = `{${Object.entries(parentObj[parentKey])[0].join(': ')}}`
           parentObj[parentKey] = patchFunc(matchVal, jsonParams, wholeObj)
-          mtchs.push(`${patchFunc.name}(${jsonParams}) / parentObj[${parentKey}]=${copyVal} / parentObj[${parentKey}]=${parentObj[parentKey]}`)
         }
       }
       else if (isObject(val)) digForFuncs(val as Obj_ish, obj, key)
     })
   }
   digForFuncs(patch) 
-  if (mtchs.length) console.log(mtchs)
   return patch // for chaining if useful
 }
-
+/**
+ * 
+ * For each match in the matchesToPatch array, deeply apply the patch object to the object obj. 
+ * Includes special {"__patchFunc":()=>any} objects in the patch object, and replaces those with the result of each function in place.
+ * 
+ * @param obj - the object to look for matches in (and patch the matching ones)
+ * @param matchesToPatch - array of {match:string, patch:object} objects that deeply apply a patch object if match (a matching path) is found in obj
+ * @returns the patched object
+ */
 export default function patchify(obj: Obj_ish, matchesToPatch: Patch[] = []): Obj_ish {
-  const objCopy = JSON.parse(JSON.stringify(obj)) //=
+  // const objCopy = JSON.parse(JSON.stringify(obj))
+  const objCopy = _.cloneDeep(obj)
   for (const { match, patch } of [...patchify.defaultPatches, ...matchesToPatch]) {
-    console.log(patch)
-    console.log(match)
-
-    // const [matchObj,  matchKey,      matchVal] = findObjMatch(obj, match)
-    // const [matchObj, matchParent2, matchKey2] = getMatchParentKey(obj, match)
     const matchObj = getMatch(obj, match)
-
-    console.log(!!matchObj, matchObj, '||')
-    // console.log(matchObj[matchKey], '||')
-    // console.log(JSON.stringify(matchObj)+'||'+matchObj+'\n')
     if (matchObj) { 
-      console.log(patch)
       const patchWFuncVals = applyPatchFuncs(obj, patch, matchObj) //= matchObj
-      console.log(patchWFuncVals)
-      // obj = merge(patchWFuncVals, objCopy) as Obj_ish // merge the original back on top of the patch
       obj = _.defaultsDeep(objCopy, patchWFuncVals ) as Obj_ish // merge each patch without stomping on existing values
-      console.log(obj)
     }
   }
   return obj //=
@@ -87,27 +87,10 @@ patchify.addPatchFunc = ( patchFnByFnNm: (PatchFuncByName_NotEmpty) ) => {
 
 
 // TESTS =============================================================================================================
-console.log(isObject({ a: 1, b: 2 })); // true
-console.log(isObject([])); // false
-console.log(isObject('abc')); // false
-console.log(isObject(null)); // false
-console.log(isObject(undefined)); // false
-console.log(isObject(123)); // false
-
-const a = {a:888, b:{u:222,v:7}            } as Obj_ish
-const b = {a:8,                 c:{p:1,q:1}} as Obj_ish
-const c = {       b:{u:2}                  } as Obj_ish
-
-const jj = ((obj) => JSON.parse(JSON.stringify(obj))) as (obj: Obj_ish) => Obj_ish
-
-console.log(merge(jj(a), jj(b), jj(c))       ) //= 
-console.log(merge(c,b,a)                   ) //= 
-
 
 function yay_it(val: Val_ish, funcParams: Obj_ish) : (Obj_ish | Val_ish[] | Val_ish) {
   return `YAY! ${JSON.stringify(funcParams)}  val was: ${JSON.stringify(val)}`
 }
-
 function curly_vars_first(val: Val_ish, funcParams: Obj_ish) : (Obj_ish | Val_ish[] | Val_ish) {
   return (curly_vars_to_array(val, funcParams)?.[0] || '') as string //=
 }
@@ -119,19 +102,16 @@ function curly_vars_to_array(val: Val_ish, funcParams: Obj_ish) : (Obj_ish | Val
   }
   return []
 }
-
 function get_val(...args:PatchFuncArgs) : PatchFuncRet {
   const [_val, funcParams, wholeObj] = args
-  console.log(funcParams) 
-  console.log(wholeObj)
   const val = _get(wholeObj, funcParams)
   if (val === undefined) throw new Error(`get_val( ${funcParams} ) not found in ${JSON.stringify(wholeObj)}`)
   return val //=
 }
 
 function matches(...args:PatchFuncArgs) : PatchFuncRet {
-  const [val, funcParams, _wholeObj] = args
-  console.log(funcParams)
+  const [val, funcParams0, _wholeObj] = args
+  const funcParams = (funcParams0 as string).replace(/^\/|\/$/g, '')
   const regexp = new RegExp(funcParams as string, 'g')
   if (!regexp) return [] as Val_ish[]
   const matches = (val as string).matchAll(regexp) 
@@ -157,9 +137,12 @@ patchify.patchFuncs //=
     { match: 'prompt.template', // if obj.prompt.template exists
       patch: {input_key: { __patchFunc:'curly_vars_first()' }}, // then obj.input_key = the first string in curly vars in obj.prompt.template
     },
-    // { match: 'prompt.template',
-    //   patch: {aaa: { __patchFunc:'matches(\{([a-zA-Z0-9]+)\})' }},
-    // },
+    { match: 'prompt.template',
+      patch: {bbb: { __patchFunc:'matches(\{([a-zA-Z0-9]+)\})' }},
+    },
+    { match: 'prompt.template',
+      patch: {ccc: { __patchFunc:'matches(/\{([a-zA-Z0-9]+)\}/)' }},
+    },
     { match: 'prompt.template', // the value of  prompt.template  will be passed to the __patchFunc
       patch: {prompt:{
         //output_parser: null,
