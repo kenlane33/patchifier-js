@@ -1,5 +1,4 @@
-import { getMatch } from './getMatch'
-
+import { getMatch, getMatchParentKey } from './getMatch';
 const testObj = {
   a: {
     b: 42,
@@ -43,3 +42,50 @@ describe('getMatch() function tests', () => {
     expect(getMatch(testObj, 'a.e'      )).toBeNull(      )
   });
 });
+
+describe('getMatchParentKey', () => {
+  const obj = {
+    a: {
+      b: {
+        c: {
+          d: 'value',
+        },
+      },
+    },
+  }
+
+  test('should return deep value, parent object and key', () => {
+    const [match, parentObj, key] = getMatchParentKey(obj, 'a.b.c.d:value');
+    expect(match    ).toEqual('value')
+    expect(parentObj).toEqual(obj.a.b.c)
+    expect(key      ).toEqual('d')
+  })
+
+  test('should return a deep object, its parentObj and a key', () => {
+    const [match, parentObj, key] = getMatchParentKey(obj, 'a.b.c');
+    expect(match    ).toEqual(obj.a.b.c)
+    expect(parentObj).toEqual(obj.a.b)
+    expect(key      ).toEqual('c')
+  })
+
+  test('should return top object, its parentObj and a key', () => {
+    const [match, parentObj, key] = getMatchParentKey(obj, 'a');
+    expect(match    ).toEqual(obj.a)
+    expect(parentObj).toEqual(obj)
+    expect(key      ).toEqual('a')
+  })
+
+  test('should return undefined for parent object and empty string for key if match not found', () => {
+    const [match, parentObj, key] = getMatchParentKey(obj, 'a.b.c.d:an_unfindable_value_to_test');
+    expect(match    ).toBeUndefined()
+    expect(parentObj).toBeUndefined()
+    expect(key      ).toBeUndefined()
+  })
+
+  test('should return entire object if matchStr is empty string', () => {
+    const [match, parentObj, key] = getMatchParentKey(obj, '');
+    expect(match    ).toEqual(obj)
+    expect(parentObj).toBeUndefined()
+    expect(key      ).toEqual('')
+  })
+})

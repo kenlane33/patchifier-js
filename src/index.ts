@@ -1,18 +1,7 @@
 import { merge, get as _get } from 'lodash'
 import { getMatch } from './getMatch'
+import { Obj_ish, MatchRet, Val_ish, PatchFunc, Patch, PatchFuncsByName, PatchFuncByName_NotEmpty, PatchFuncArgs, PatchFuncRet } from './patchifierTypes'
 
-type Obj_ish = { [key: string]: unknown }
-type Val_ish  = Exclude<unknown, object>
-type Ary_ish  = unknown[]
-
-type MatchRet = [(Obj_ish | null), (string | null), Val_ish]
-
-type Patch     = {match: string, patch: Obj_ish}
-type PatchFuncArgs = [val: Val_ish, funcParams: unknown, wholeObj: Obj_ish]
-type PatchFuncRet  = (Obj_ish | Val_ish[] | Val_ish)
-type PatchFunc = (...args: PatchFuncArgs) => PatchFuncRet
-type PatchFuncsByName = { [funcName:string]:PatchFunc }
-type PatchFuncByName_NotEmpty = Record<string, PatchFunc> & PatchFuncsByName
 
 function findObjMatch(obj: Obj_ish, match: string): MatchRet {
   console.log(match)
@@ -27,32 +16,7 @@ function findObjMatch(obj: Obj_ish, match: string): MatchRet {
   return [obj as Obj_ish, lastKey, matchObj as Val_ish] //=
 }
 
-function findObjMatchOld(obj: Obj_ish, match: Obj_ish): MatchRet {
-  const matchKeys = Object.keys(match)
-  if (matchKeys.length === 0) return [obj, null, null] // lets you match an empty object to any object
-  let matchKey = null
-  let matchVal = null
-  const matchObj = Object.entries(obj).find(([key, value]) => {
-    if (matchKeys.includes(key)) {
-      const valToMatch = match[key]
-      if (typeof value === "object" && value !== null) {
-        const [objMatch, objMatchKey, objMatchVal] = findObjMatchOld(value as Obj_ish, valToMatch as Obj_ish)
-        if (objMatch) {
-          matchKey = objMatchKey ? `${key}.${objMatchKey}` : key
-          matchVal = objMatchVal
-          return true
-        }
-      } else if (valToMatch === "*" || value === valToMatch) {
-        matchKey = key
-        matchVal = value
-        return true
-      }
-    }
-    return false
-  });
-  return matchObj ? [obj, matchKey, matchVal] : [null, null, null]; //=
-}
-function isObject(item: unknown): item is Obj_ish {
+function isObject(item: unknown): boolean {
   if (item === null || item === undefined) return false
   return (typeof item === 'object')
 }
