@@ -22,15 +22,15 @@ console.log(_k, _v)
 
 /**
  * 
- * Use matchStr path to get a matching deep value from an object.
+ * Use matchPath path to get a matching deep value from an object.
  * 
  * @param obj - object to search
- * @param matchStr - lodash path, then an optional : and value or regExp to match. Examples: 'a.b' or 'a.b:42' or 'a.b:/^4/'
+ * @param matchPath - lodash path, then an optional : and value or regExp to match. Examples: 'a.b' or 'a.b:42' or 'a.b:/^4/'
  * @returns matching object value, or undefined if no match
  */
-export function getMatch(obj: Record<string, unknown>, matchStr: string): unknown {
-  if (matchStr=='') return obj
-  const [path, matchVal] = matchStr.split(":")
+export function getMatch(obj: Record<string, unknown>, matchPath: string): unknown {
+  if (matchPath=='') return obj
+  const [path, matchVal] = matchPath.split(":")
   const objVal    = _get(obj, path)
   if (matchVal === undefined) return objVal                         // example: getMatch({a:{b:42}},      'a.b') => 42
   const regExpStr = matchVal && matchVal.match(/^\/(.*)\/$/)?.[1]
@@ -42,16 +42,16 @@ export function getMatch(obj: Record<string, unknown>, matchStr: string): unknow
 
 /**
  * 
- * Use matchStr path to get a matching deep value from an object.
+ * Use matchPath path to get a matching deep value from an object.
  * 
  * @param obj - object to search
- * @param matchStr - lodash path, then an optional : and value or regExp to match. Examples: 'a.b' or 'a.b:42' or 'a.b:/^4/'
+ * @param matchPath - lodash path, then an optional : and value or regExp to match. Examples: 'a.b' or 'a.b:42' or 'a.b:/^4/'
  * @returns matching object value, or undefined if no match
  */
-export function getMatchParentKey(obj: Record<string, unknown>, matchStr: string): [match:unknown, parent:unknown, key:string] {
-  if (matchStr=='') return [obj, undefined, '']
-  const [path, matchVal] = matchStr.split(":")
-  const match = getMatch(obj, matchStr)
+export function getMatchParentKey(obj: Record<string, unknown>, matchPath: string): [match:unknown, parent:unknown, key:string] {
+  if (matchPath=='') return [obj, undefined, '']
+  const [path, matchVal] = matchPath.split(":")
+  const match = getMatch(obj, matchPath)
   // recurse into obj to find parent and key of match
   let parent
   function digToParentObjAndKeyOfMatch(a,b) {
@@ -65,7 +65,7 @@ export function getMatchParentKey(obj: Record<string, unknown>, matchStr: string
     return []
   }
 
-  return [match, ...(digToParentObjAndKeyOfMatch(obj, match).slice(-2) as [ unknown, string ])]
+  return [match, ...((digToParentObjAndKeyOfMatch(obj, match)?.slice(-2) || [] ) as [ unknown, string ])]
 }
 // Use below "chk()s" with JS REPL extension in VS Code for quick refactor checks
 //     or see ./getMatch.test.ts for Jest tests

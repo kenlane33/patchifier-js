@@ -1,20 +1,6 @@
-import { merge, get as _get } from 'lodash'
-import { getMatch } from './getMatch'
+import { _, merge, get as _get } from 'lodash'
+import { getMatch, getMatchParentKey } from './getMatch'
 import { Obj_ish, MatchRet, Val_ish, PatchFunc, Patch, PatchFuncsByName, PatchFuncByName_NotEmpty, PatchFuncArgs, PatchFuncRet } from './patchifierTypes'
-
-
-function findObjMatch(obj: Obj_ish, match: string): MatchRet {
-  console.log(match)
-  const matchObj = getMatch(obj, match) //= 
-  if (matchObj==undefined) return [null, null, null]
-  // grab everything before the :
-  const pathArr = match.split(':')[0].split('.') //=
-  const parPath = pathArr.slice(0, -1).join('.') //= 
-  const lastKey = pathArr.slice(-1)[0] //=
-  const parent  = getMatch(obj, parPath) 
-  console.log(parent)
-  return [obj as Obj_ish, lastKey, matchObj as Val_ish] //=
-}
 
 function isObject(item: unknown): boolean {
   if (item === null || item === undefined) return false
@@ -68,18 +54,24 @@ export default function patchify(obj: Obj_ish, matchesToPatch: Patch[] = []): Ob
   for (const { match, patch } of [...patchify.defaultPatches, ...matchesToPatch]) {
     console.log(patch)
     console.log(match)
-    const [matchObj,_matchKey,matchVal] = findObjMatch(obj, match) 
-    console.log(!!matchObj, matchVal)
-    console.log(JSON.stringify(matchObj)+'||'+matchVal+'\n')
+
+    // const [matchObj,  matchKey,      matchVal] = findObjMatch(obj, match)
+    // const [matchObj, matchParent2, matchKey2] = getMatchParentKey(obj, match)
+    const matchObj = getMatch(obj, match)
+
+    console.log(!!matchObj, matchObj, '||')
+    // console.log(matchObj[matchKey], '||')
+    // console.log(JSON.stringify(matchObj)+'||'+matchObj+'\n')
     if (matchObj) { 
-      const patchWFuncVals = applyPatchFuncs(obj, patch, matchVal) //= matchVal
       console.log(patch)
+      const patchWFuncVals = applyPatchFuncs(obj, patch, matchObj) //= matchObj
       console.log(patchWFuncVals)
-      obj = merge(patchWFuncVals, objCopy) as Obj_ish 
+      // obj = merge(patchWFuncVals, objCopy) as Obj_ish // merge the original back on top of the patch
+      obj = _.defaultsDeep(objCopy, patchWFuncVals ) as Obj_ish // merge each patch without stomping on existing values
       console.log(obj)
     }
   }
-  return obj
+  return obj //=
 }
 
 patchify.defaultPatches = [] as Patch[]
@@ -137,7 +129,7 @@ function get_val(...args:PatchFuncArgs) : PatchFuncRet {
   return val //=
 }
 
-function regexp_matches(...args:PatchFuncArgs) : PatchFuncRet {
+function matches(...args:PatchFuncArgs) : PatchFuncRet {
   const [val, funcParams, _wholeObj] = args
   console.log(funcParams)
   const regexp = new RegExp(funcParams as string, 'g')
@@ -151,7 +143,7 @@ patchify.addPatchFunc( {
   curly_vars_to_array,
   curly_vars_first,
   get_val,
-  regexp_matches,
+  matches,
 } )
 patchify.addPatchFunc( { } )
 
@@ -162,34 +154,33 @@ patchify.patchFuncs //=
     { "match": "llm.model_name:/text-davinci/", 
       "patch": {"llm":{"_type": "openai"}}
     },
-  //   { match: 'prompt.template',
-  //     patch: {input_key: { __patchFunc:'curly_vars_first()' }},
-  //   },
-  //   { match: 'prompt.template',
-  //     patch: {aaa: { __patchFunc:'regexp_matches(\{([a-zA-Z0-9]+)\})' }},
-  //   },
-  //   { match: 'prompt.template', // the value of  prompt.template  will be passed to the __patchFunc
-  //     patch: {prompt:{
-  //       output_parser: null,
-  //       template_format: 'f-string',
-  //       _type: 'prompt',
-  //       input_variables: { __patchFunc:'curly_vars_to_array()' },
-  //       tester: { __patchFunc:'yay_it({"foo":"boo"})' },
-  //   }},
-  // },
-  { match: 'llm._type:openai', 
-    patch: {
-      llm:{ _type: { __patchFunc:'get_val(llm.override)' } }
-    }
-  },
+    { match: 'prompt.template', // if obj.prompt.template exists
+      patch: {input_key: { __patchFunc:'curly_vars_first()' }}, // then obj.input_key = the first string in curly vars in obj.prompt.template
+    },
+    // { match: 'prompt.template',
+    //   patch: {aaa: { __patchFunc:'matches(\{([a-zA-Z0-9]+)\})' }},
+    // },
+    { match: 'prompt.template', // the value of  prompt.template  will be passed to the __patchFunc
+      patch: {prompt:{
+        //output_parser: null,
+        //template_format: 'f-string',
+        //_type: 'prompt',
+        input_variables: { __patchFunc:'curly_vars_to_array()' },
+        //tester: { __patchFunc:'yay_it({"foo":"boo"})' },
+      }},
+    },
+    { match: 'llm._type:openai', 
+      patch: {
+        llm:{ aaa: { __patchFunc:'get_val(llm.override)' } }
+      }
+    },
 
 ])
 
 //patchify.addPatch([
   // { match: {llm:{_type: 'openai'} }, 
   //   patch: {llm:{
-  //     test__get_val: { __patchFunc:'get_val("llm._type")'},
-  //     // test__regexp_matches: { __patchFunc:'regexp_matches("\\{([a-zA-Z0-9]+)\\}")'},
+  //     // test__matches: { __patchFunc:'matches("\\{([a-zA-Z0-9]+)\\}")'},
   //     temperature: 0.0, // max_tokens: 256, top_p: 1, frequency_penalty: 0, 
   //   // presence_penalty: 0, n: 1, best_of: 1, request_timeout: null, logit_bias: {},
   // }},
@@ -201,7 +192,7 @@ patchify.patchFuncs //=
 patchify(
   { llm: {
       model_name: "text-davinci-003",
-      override: 'FOOP',
+      override: 'AAA!',
     },
     prompt:{template:'Answer questions as table rows, Q1:{q1}, Q2:{q2}, Q3:{q3}' }
   }
