@@ -1,24 +1,24 @@
 import {get as _get, find, set as _set } from 'lodash'
 import _ from 'lodash'
 
-_.mixin({
-  deeply: function (map) {
-    return function(obj, fn) {
-      return map(_.mapValues(obj, function (v) {
-        return _.isPlainObject(v) ? _.deeply(map)(v, fn) : v;
-      }), fn);
-    }
-  },
-})
+// _.mixin({
+//   deeply: function (map) {
+//     return function(obj, fn) {
+//       return map(_.mapValues(obj, function (v) {
+//         return _.isPlainObject(v) ? _.deeply(map)(v, fn) : v;
+//       }), fn);
+//     }
+//   },
+// })
 
-const tst  = {a:{b:{c:42}}}
-const parO = tst.a.b
-let _k, _v
-_.deeply(_.mapKeys)(tst, (v,k)=> {
-  if(v==parO){_k=k;_v=v}
-  console.log(k,v, parO)
-} )
-console.log(_k, _v)
+// const tst  = {a:{b:{c:42}}}
+// const parO = tst.a.b
+// let _k, _v
+// _.deeply(_.mapKeys)(tst, (v,k)=> {
+//   if(v==parO){_k=k;_v=v}
+//   console.log(k,v, parO)
+// } )
+// console.log(_k, _v)
 
 /**
  * 
@@ -67,8 +67,10 @@ export function getMatchParentKey(obj: Record<string, unknown>, matchPath: strin
 
   return [match, ...((digToParentObjAndKeyOfMatch(obj, match)?.slice(-2) || [] ) as [ unknown, string ])]
 }
+// === TEST ============================================================================
 // Use below "chk()s" with JS REPL extension in VS Code for quick refactor checks
 //     or see ./getMatch.test.ts for Jest tests
+/*
 function chk(a, path, b) { // check that getMatch() works as expected to return b from a at path
   const [match,parent,key] = getMatchParentKey(a, path); 
   return (
@@ -84,11 +86,12 @@ chk( obj, 'a.b', obj.a.b             ) //=
 chk( obj, 'a.b.c', obj.a.b.c         ) //=
 chk( obj, 'a.b.c.d', obj.a.b.c.d     ) //=
 chk( obj, 'a.b.c.d', 'value'         ) //=
-chk( obj, 'a.b.c.d:value',   'value' ) //=
-chk( obj, 'a.b.c.d:/val.*/', 'value' ) //=
+chk( obj, 'a.b.c.d:value',  'value'  ) //=
+chk( obj, 'a.b.c.d:/lue$/', 'value'  ) //=
 
 const obj2 = {a:{b:{c:[3,5,7]}}}
 chk( obj2, 'a.b.c[1]', 5             ) //=
 chk( obj2, 'a.b.c.1',  5             ) //=
 chk( obj2, 'a.b.c', obj2.a.b.c       ) //=
 chk( obj2, 'a.b.c',  [3,5,7]         ) //=
+*/

@@ -1,7 +1,15 @@
-import _ from 'lodash'
+import {isObject} from 'lodash'
+import { mapKeysDeep, mapValuesDeep } from './mapDeep'
+
+const testObj = { a: { c: 2 }, d:[{x:7},{y:8}] }
+mapKeysDeep(  (testObj), (obj, k, v) => k.toUpperCase()+(isObject(v)?'':v))    //=
+mapKeysDeep(  (testObj), (obj, k, v) => k+(isObject(v)?'':v+2))                //=
+mapValuesDeep((testObj), (obj, k, v) => ''+k.toUpperCase()+'=='+(v))           //=
+mapValuesDeep((testObj), (obj, k, v) => `${JSON.stringify(obj)}.${k} == ${v}`) //=
+
+
 
 // import {patchify} from './patchify'
-  
 // patchify.addPatch([
 //   { "match": "llm.model_name:/text-davinci/", 
 //     "patch": {"llm":{"_type": "openai"}}
@@ -29,7 +37,6 @@ import _ from 'lodash'
 //     }
 //   },
 // ])
-
 // //patchify.addPatch([
 //   // { match: {llm:{_type: 'openai'} }, 
 //   //   patch: {llm:{
@@ -41,7 +48,6 @@ import _ from 'lodash'
 //   //   patch: {memory: null, verbose: false, output_key: 'answer', llm:{model_name: "text-davinci-003"}}
 //   // },
 //   //])
-
 // patchify(
 //   { llm: {
 //       model_name: "text-davinci-003",
@@ -50,45 +56,3 @@ import _ from 'lodash'
 //     prompt:{template:'Answer questions as table rows, Q1:{q1}, Q2:{q2}, Q3:{q3}' }
 //   }
 // ) //= 
-
-
-const mapKeysDeepOld = (obj, cb) =>
-_.mapValues(
-  _.mapKeys(obj, cb),
-  val => (_.isObject(val) ? mapKeysDeepOld(val, cb) : val),
-)
-
-const mapKeysDeepOld2 = (obj, cb) =>(
-  _.mapValues(
-    _.mapKeys(obj, (value, key, obj) => {
-      return _.isObject(value) ? value : cb(obj, key, value)
-    }),
-    val => (_.isObject(val) ? mapKeysDeepOld2(val, cb) : val)
-  )
-)
-
-
-const mapKeysDeep = (obj, cb, parentObj = null, key = null) =>(
-  _.isObject(obj)
-    ? (_.isArray(obj)
-        ? _.map(obj, (v, k) => mapKeysDeep(v, cb, obj, k))
-        : _.fromPairs(_.map(_.toPairs(obj), ([k, v]) => [cb(obj, k, v), mapKeysDeep(v, cb, obj, k)]))
-      )
-    : obj
-)
-
-const mapValuesDeep = (obj, cb, parentObj = null, key = null) => {
-  const dig = (v, k) => mapValuesDeep(v, cb, obj, k)
-  return _.isObject(obj)
-    ? (_.isArray(obj)
-        ? _.map(      obj, dig)
-        : _.mapValues(obj, dig)
-      )
-    : cb(parentObj, key, obj)
-}
-
-const testObj = { a: { c: 2 }, d:[{x:7},{y:8}] }
-const c = _.cloneDeep
-mapKeysDeep(  c(testObj), (obj, k, v) => k.toUpperCase()+(_.isObject(v)?'':v)) //=
-mapValuesDeep(c(testObj), (obj, k, v) => ''+k.toUpperCase()+'=='+(v)) //=
-mapValuesDeep(c(testObj), (obj, k, v) => `${JSON.stringify(obj)}.${k} == ${v}`) //=
