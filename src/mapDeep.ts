@@ -63,3 +63,9 @@ chk( mapValuesDeep, testObj,
   { a: { c: '{"c":2}.c == 2' }, d: [ { x: '{"x":7}.x == 7' }, { y: '{"y":8}.y == 8' } ] }
 ) //=
 mapValuesDeep(testObj, (obj, k, v) => `${JSON.stringify(obj)}.${k} == ${v}`)   //=
+
+chk( mapValuesDeep, testObj,
+  (obj, k, v) => v,
+  { a: { c: 2 }, d: [ { x: 7 }, { y: 8 } ] }
+) //= 
+mapValuesDeep(testObj, (obj, k, v) => v)//=
