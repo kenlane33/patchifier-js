@@ -7,11 +7,12 @@ import { patchify } from './patchify';
 //   return `YAY! ${JSON.stringify(funcParams)}  val was: ${JSON.stringify(val)}`;
 // }
 //====== |||||||||||||||| =====================================================================================
-function curly_vars_first(val: Val_ish, funcParams: Obj_ish): (Obj_ish | Val_ish[] | Val_ish) {
-  return (curly_vars_to_array(val, funcParams)?.[0] || '') as string; //=
+function curly_vars_first(val: Val_ish, funcParams: Obj_ish): string {
+  const x = curly_vars_to_array(val, funcParams) || ['']
+  return x[0]
 }
 //====== ||||||||||||||||||| =====================================================================================
-function curly_vars_to_array(val: Val_ish, funcParams: Obj_ish): (Obj_ish | Val_ish[] | Val_ish) {
+function curly_vars_to_array(val: Val_ish, funcParams: Obj_ish): (Val_ish[]) {
   console.log(typeof val, val); //=
   if (typeof val === 'string') {
     const matches = val.matchAll(/{\s*([a-zA-Z0-9_]+)\s*}/g);
@@ -32,7 +33,7 @@ function curly_vars_to_array(val: Val_ish, funcParams: Obj_ish): (Obj_ish | Val_
  */
 function get_val(...args: PatchFuncArgs): PatchFuncRet {
   const [_val, funcParams, wholeObj] = args;
-  const val = _get(wholeObj, funcParams);
+  const val = _get(wholeObj, funcParams as string); // Provide the correct type for funcParams
   if (val === undefined)
     throw new Error(`get_val( ${funcParams} ) not found in ${JSON.stringify(wholeObj)}`);
   return val; //=

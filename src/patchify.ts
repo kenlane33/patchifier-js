@@ -1,12 +1,15 @@
 import { cloneDeep, defaultsDeep } from 'lodash'
 import { Obj_ish, Val_ish, PatchFunc, Patch, PatchFuncsByName, PatchFuncByName_NotEmpty } from './patchifierTypes';
 import { getMatch } from './getMatch';
-import { addCorePatchFuncs } from './core_PatchFuncs';
+// const { cloneDeep, defaultsDeep } = require('lodash')
+// const getMatch = require('./getMatch')
+// const addCorePatchFuncs = require('./core_PatchFuncs')
+// const { Obj_ish, Val_ish, PatchFunc, Patch, PatchFuncsByName, PatchFuncByName_NotEmpty } = require('./patchifierTypes')
 
 
 function isObject(item: unknown): boolean {
   if (item === null || item === undefined) return false
-  return (typeof item === 'object')
+  return (item === 'object')
 }
 
 function safeJsonParse(str: string): unknown {
@@ -22,7 +25,7 @@ function safeJsonParse(str: string): unknown {
  * @param str - a string that may contain a function name and/or json params in parens. Ex: 'get_val(a.b)', 'matches(/^fun/)'
  * @returns 
  */
-function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, unknown] {
+function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, any] {
   const funcName   = str.match(/^[a-zA-Z0-9_]+/)?.[0]
   const jsonParams = str.match(/\((.*)\)/)?.[1] || '{}' //=
   const func       = (funcName && patchify.patchFuncs[funcName]) || null //=
@@ -57,7 +60,7 @@ export function applyPatchFuncs( wholeObj:Obj_ish, patch: Obj_ish, matchVal: Val
 
 /**
  *
- * For each match in the matchesToPatch array, deeply apply the patch object to the object obj.
+ * For each match in the matchesToPatch array, deeply apply the patch object to the object obj _without_ replacing existing values.
  * Includes special {"__patchFunc":()=>any} objects in the patch object, and replaces those with the result of each function in place.
  *
  * @param obj - the object to look for matches in (and patch the matching ones)
@@ -118,10 +121,10 @@ patchify.addPatchFunc = (patchFnByFnNm: (PatchFuncByName_NotEmpty)) => {
 //       llm:{ aaa: { __patchFunc:'get_val(llm.override)' } }
 //     }
 //   },
-// ])
+// ]) //= 
 
-addCorePatchFuncs()
-console.log(patchify)
+// addCorePatchFuncs()
+// console.log(patchify) 
 
 // patchify(
 //   { llm: {
@@ -130,4 +133,4 @@ console.log(patchify)
 //     },
 //     prompt:{template:'Answer questions as table rows, Q1:{q1}, Q2:{q2}, Q3:{q3}' }
 //   }
-// ) //= 
+// ) 

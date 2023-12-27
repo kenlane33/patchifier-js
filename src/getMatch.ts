@@ -54,7 +54,7 @@ export function getMatchParentKey(obj: Record<string, unknown>, matchPath: strin
   const match = getMatch(obj, matchPath)
   // recurse into obj to find parent and key of match
   let parent
-  function digToParentObjAndKeyOfMatch(a,b) {
+  function digToParentObjAndKeyOfMatch(a:any, b:any): any[] {
     if (a===b) return []
     if (typeof a !== 'object') return []
     for (const [k,v] of Object.entries(a)) {
