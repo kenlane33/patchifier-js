@@ -1,18 +1,11 @@
 import { cloneDeep, defaultsDeep } from 'lodash'
-import { Obj_ish, Val_ish, PatchFunc, Patch, PatchFuncsByName, PatchFuncByName_NotEmpty } from './patchifierTypes';
-import { getMatch } from './getMatch';
-// const { cloneDeep, defaultsDeep } = require('lodash')
-// const getMatch = require('./getMatch')
-// const addCorePatchFuncs = require('./core_PatchFuncs')
-// const { Obj_ish, Val_ish, PatchFunc, Patch, PatchFuncsByName, PatchFuncByName_NotEmpty } = require('./patchifierTypes')
+import { Obj_ish, Val_ish, PatchFunc, Patch, PatchFuncsByName, PatchFuncByName_NotEmpty } from './patchifierTypes'
+import { getMatch } from './getMatch'
+import { addCorePatchFuncs } from './core_PatchFuncs'
+import { isObject } from './patchifierTypes'
 
 
-function isObject(item: unknown): boolean {
-  if (item === null || item === undefined) return false
-  return (item === 'object')
-}
-
-function safeJsonParse(str: string): unknown {
+export function safeJsonParse(str: string): unknown {
   try { return JSON.parse(str) }
   catch (e) { return str }
 }
@@ -43,15 +36,21 @@ function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, any] {
  * @returns the patch object with each function object replaced with its result
  */
 export function applyPatchFuncs( wholeObj:Obj_ish, patch: Obj_ish, matchVal: Val_ish  ): Obj_ish {
-  function digForFuncs(obj: Obj_ish, parentObj?: Obj_ish, parentKey?: string) {
-    Object.entries(obj).forEach(([key, val]) => {
-      if (key==='__patchFunc') {
-        const [patchFunc, jsonParams] = parseStrFuncAndJsonParams(val as string) as [PatchFunc|null, unknown]
-        if (patchFunc && parentObj && parentKey) {
-          parentObj[parentKey] = patchFunc(matchVal, jsonParams, wholeObj)
+  // console.log('===digForFuncs(===\n')
+  function digForFuncs(parentObj: Obj_ish, parentKey?: string) {
+    Object.entries(parentObj).forEach(([key, val]) => {
+      const isObj = isObject(val)
+      const pFnStr = isObj && (val as Obj_ish)['__patchFunc']
+      // console.log('key=', key, ', val=', val, ', isObject(val)='+isObject(val)+', pFnStr=', pFnStr)
+      if (pFnStr) { // if val is an object with a __patchFunc key
+        // console.log( 'parentObj=', parentObj, 'parentKey=', parentKey, 'value=', parentKey && parentObj[parentKey] )
+        const [patchFunc, jsonParams] = parseStrFuncAndJsonParams(pFnStr as string) as [PatchFunc|null, unknown]
+        if (patchFunc && parentObj && key) {
+          // console.log('===applyPatchFuncs(===\n', 'patchFunc=', patchFunc, 'jsonParams=', jsonParams, 'wholeObj=', wholeObj)
+          parentObj[key] = patchFunc(matchVal, jsonParams, wholeObj)
         }
       }
-      else if (isObject(val)) digForFuncs(val as Obj_ish, obj, key)
+      else if (isObj) digForFuncs(val as Obj_ish, key)
     })
   }
   digForFuncs(patch) 
@@ -69,30 +68,41 @@ export function applyPatchFuncs( wholeObj:Obj_ish, patch: Obj_ish, matchVal: Val
  */
 export function patchify(obj: Obj_ish, matchesToPatch: Patch[] = []): Obj_ish {
   // const objCopy = JSON.parse(JSON.stringify(obj))
-  const objCopy = cloneDeep(obj);
+  let objCopy = cloneDeep(obj)
   for (const { match, patch } of [...patchify.defaultPatches, ...matchesToPatch]) {
-    const matchObj = getMatch(obj, match);
+    const matchObj = getMatch(objCopy, match) //= 
     if (matchObj) {
-      const patchWFuncVals = applyPatchFuncs(obj, patch, matchObj); //= matchObj
-      obj = defaultsDeep(objCopy, patchWFuncVals) as Obj_ish; // merge each patch without stomping on existing values
+      const patchWFuncVals = applyPatchFuncs(objCopy, patch, matchObj) //= matchObj
+      objCopy = defaultsDeep(objCopy, patchWFuncVals) as Obj_ish // merge each patch without stomping on existing values
     }
   }
-  return obj; //=
+  return objCopy
 }
 
 //==== PATCHIFY STATIC PROPERTIES ======================================================================================
-patchify.defaultPatches = [] as Patch[];
+patchify.defaultPatches = [] as Patch[]
+/* 
+  * patchify.addPatch() adds a patch or array of patches to the defaultPatches array.
+  * @param patch_s_ - a single Patch object or an array of Patch objects
+  */
 patchify.addPatch = (patch_s_: (Patch | Patch[])) => {
   if (Array.isArray(patch_s_))
-    return patch_s_.forEach(patchify.addPatch);
+    return patch_s_.forEach(patchify.addPatch)
   else
-    patchify.defaultPatches.push(patch_s_);
+    patchify.defaultPatches.push(patch_s_)
 };
-patchify.patchFuncs = {} as PatchFuncsByName;
+patchify.patchFuncs = {} as PatchFuncsByName
+/* 
+  * patchify.addPatchFunc() adds a object of patchFuncsByNm to the static patchify.patchFuncs object.
+  * For example: patchify.addPatchFunc({get_val, matches, curly_vars_to_array})
+  * or:          patchify.addPatchFunc( {reportFn:(_obj:Obj_ish, k:Key_ish, v:Val_ish)=>`o[${k}]=${v}`} )
+  * @param patchFnByFnNm - a single PatchFuncByName_NotEmpty object or an array of PatchFuncByName_NotEmpty objects
+  */
 patchify.addPatchFunc = (patchFnByFnNm: (PatchFuncByName_NotEmpty)) => {
-  Object.assign(patchify.patchFuncs, patchFnByFnNm); //= patchFnByFnNm
+  Object.assign(patchify.patchFuncs, patchFnByFnNm) // merge in the new patchFuncs
 };
 
+addCorePatchFuncs() // adds funcs like 'matches', 'curly_vars_to_array', etc.
 
 //=== TEST =============================================================================================================
 // patchify.addPatch([
@@ -123,14 +133,13 @@ patchify.addPatchFunc = (patchFnByFnNm: (PatchFuncByName_NotEmpty)) => {
 //   },
 // ]) //= 
 
-// addCorePatchFuncs()
-// console.log(patchify) 
 
-// patchify(
+// const x = patchify(
 //   { llm: {
 //       model_name: "text-davinci-003",
 //       override: 'AAA!',
 //     },
 //     prompt:{template:'Answer questions as table rows, Q1:{q1}, Q2:{q2}, Q3:{q3}' }
 //   }
-// ) 
+// )
+// console.log('=====patchify.ts=====\n', x)

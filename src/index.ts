@@ -57,4 +57,4 @@ var x = patchify(
     prompt:{template:'Answer questions as table rows, Q1:{q1}, Q2:{q2}, Q3:{q3}' }
   }
 ) 
-x //= 
+console.log('=====index.ts=====\n', x)

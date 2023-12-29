@@ -8,7 +8,7 @@ import { patchify } from './patchify';
 // }
 //====== |||||||||||||||| =====================================================================================
 function curly_vars_first(val: Val_ish, funcParams: Obj_ish): string {
-  const x = curly_vars_to_array(val, funcParams) || ['']
+  const x = curly_vars_to_array(val, funcParams) || [null]
   return x[0]
 }
 //====== ||||||||||||||||||| =====================================================================================

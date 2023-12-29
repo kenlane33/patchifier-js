@@ -48,7 +48,7 @@ export function getMatch(obj: Record<string, unknown>, matchPath: string): unkno
  * @param matchPath - lodash path, then an optional : and value or regExp to match. Examples: 'a.b' or 'a.b:42' or 'a.b:/^4/'
  * @returns matching object value, or undefined if no match
  */
-export function getMatchParentKey(obj: Record<string, unknown>, matchPath: string): [match:unknown, parent:unknown, key:string] {
+export function getMatchParentKey(obj: Record<string, unknown>, matchPath: string): [match:unknown, parent:any, key:string] {
   if (matchPath=='') return [obj, undefined, '']
   const [path, matchVal] = matchPath.split(":")
   const match = getMatch(obj, matchPath)
@@ -70,8 +70,8 @@ export function getMatchParentKey(obj: Record<string, unknown>, matchPath: strin
 // === TEST ============================================================================
 // Use below "chk()s" with JS REPL extension in VS Code for quick refactor checks
 //     or see ./getMatch.test.ts for Jest tests
-/*
-function chk(a, path, b) { // check that getMatch() works as expected to return b from a at path
+
+function chk(a:any, path:string, b:any) { // check that getMatch() works as expected to return b from a at path
   const [match,parent,key] = getMatchParentKey(a, path); 
   return (
     (_.isEqual(parent?.[key], b) &&  _.isEqual(match, b))
@@ -94,4 +94,3 @@ chk( obj2, 'a.b.c[1]', 5             ) //=
 chk( obj2, 'a.b.c.1',  5             ) //=
 chk( obj2, 'a.b.c', obj2.a.b.c       ) //=
 chk( obj2, 'a.b.c',  [3,5,7]         ) //=
-*/
