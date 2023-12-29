@@ -12,7 +12,7 @@ mapValuesDeep((testObj), (obj:Obj_ish, k?:Key_ish, v?:Val_ish) => `${JSON.string
 
 
 patchify.addPatch([
-  { "match": "llm.model_name:/text-davinci/", 
+  { "match": "llm.model_name:/text-davinci-/", 
     "patch": {"llm":{"_type": "openai"}}
   },
   { match: 'prompt.template', // if obj.prompt.template exists

@@ -1,6 +1,6 @@
 import { cloneDeep, defaultsDeep } from 'lodash'
 import { Obj_ish, Val_ish, PatchFunc, Patch, PatchFuncsByName, PatchFuncByName_NotEmpty } from './patchifierTypes'
-import { getMatch } from './getMatch'
+import { getMatch, getMatchParentKey } from './getMatch'
 import { addCorePatchFuncs } from './core_PatchFuncs'
 import { isObject } from './patchifierTypes'
 
@@ -18,7 +18,7 @@ export function safeJsonParse(str: string): unknown {
  * @param str - a string that may contain a function name and/or json params in parens. Ex: 'get_val(a.b)', 'matches(/^fun/)'
  * @returns 
  */
-function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, any] {
+export function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, any] {
   const funcName   = str.match(/^[a-zA-Z0-9_]+/)?.[0]
   const jsonParams = str.match(/\((.*)\)/)?.[1] || '{}' //=
   const func       = (funcName && patchify.patchFuncs[funcName]) || null //=
@@ -35,7 +35,7 @@ function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, any] {
  * @param matchVal - the value that was matched in the original object to cause this match-patch to be applied
  * @returns the patch object with each function object replaced with its result
  */
-export function applyPatchFuncs( wholeObj:Obj_ish, patch: Obj_ish, matchVal: Val_ish  ): Obj_ish {
+export function applyPatchFuncsOld( wholeObj:Obj_ish, patch: Obj_ish, matchVal: Val_ish  ): Obj_ish {
   // console.log('===digForFuncs(===\n')
   function digForFuncs(parentObj: Obj_ish, parentKey?: string) {
     Object.entries(parentObj).forEach(([key, val]) => {
@@ -56,6 +56,29 @@ export function applyPatchFuncs( wholeObj:Obj_ish, patch: Obj_ish, matchVal: Val
   digForFuncs(patch) 
   return patch // for chaining if useful
 }
+export function applyPatchFuncs(wholeObj, patch, matchVal) {
+  recurseObject(patch, (obj, key, val) => {
+    const isObj = isObject(val);
+    const pFnStr = isObj && val['__patchFunc'];
+    if (pFnStr) {
+      const [patchFunc, jsonParams] = parseStrFuncAndJsonParams(pFnStr) || [null, null];
+      if (patchFunc && obj && key) {
+        obj[key] = patchFunc(matchVal, jsonParams, wholeObj);
+      }
+    }
+  });
+  return patch;
+}
+
+function recurseObject(parObj, callback) {
+  Object.entries(parObj).forEach(([key, value]) => {
+      callback(parObj, key, value);
+
+      if (typeof value === 'object' && value !== null) {
+          recurseObject(value, callback);
+      }
+  });
+}
 
 /**
  *
@@ -70,9 +93,11 @@ export function patchify(obj: Obj_ish, matchesToPatch: Patch[] = []): Obj_ish {
   // const objCopy = JSON.parse(JSON.stringify(obj))
   let objCopy = cloneDeep(obj)
   for (const { match, patch } of [...patchify.defaultPatches, ...matchesToPatch]) {
-    const matchObj = getMatch(objCopy, match) //= 
-    if (matchObj) {
-      const patchWFuncVals = applyPatchFuncs(objCopy, patch, matchObj) //= matchObj
+    const [matched, parObj, key ] = getMatchParentKey(objCopy, match)
+    console.log('matched=', matched, 'parObj=', parObj, 'key=', key)
+    if (matched) {
+      const patchWFuncVals = applyPatchFuncs(objCopy, patch, matched)
+      console.log('patchWFuncVals=', patchWFuncVals)
       objCopy = defaultsDeep(objCopy, patchWFuncVals) as Obj_ish // merge each patch without stomping on existing values
     }
   }
