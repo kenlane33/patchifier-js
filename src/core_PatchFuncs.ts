@@ -7,15 +7,15 @@ import { patchify } from './patchify';
 //   return `YAY! ${JSON.stringify(funcParams)}  val was: ${JSON.stringify(val)}`;
 // }
 //====== |||||||||||||||| =====================================================================================
-function curly_vars_first(val: Val_ish, funcParams: Obj_ish): string {
-  const x = curly_vars_to_array(val, funcParams) || [null]
+function curly_vars_first(...args: PatchFuncArgs): PatchFuncRet {
+  const x = curly_vars_to_array(...args) || [null]
   return x[0]
 }
 //====== ||||||||||||||||||| =====================================================================================
-function curly_vars_to_array(val: Val_ish, funcParams: Obj_ish): (Val_ish[]) {
-  console.log(typeof val, val); //=
-  if (typeof val === 'string') {
-    const matches = val.matchAll(/{\s*([a-zA-Z0-9_]+)\s*}/g);
+function curly_vars_to_array(...args: PatchFuncArgs): PatchFuncRet {
+  const [_val, _funcParams0, _wholeObj, matchVal] = args;
+  if (typeof matchVal === 'string') {
+    const matches = matchVal.matchAll(/{\s*([a-zA-Z0-9_]+)\s*}/g);
     return [...matches].map(m => m[1]); //=
   }
   return [];
@@ -32,7 +32,7 @@ function curly_vars_to_array(val: Val_ish, funcParams: Obj_ish): (Val_ish[]) {
  * @returns the value at the path specified by the funcParams
  */
 function get_val(...args: PatchFuncArgs): PatchFuncRet {
-  const [_val, funcParams, wholeObj] = args;
+  const [_val, funcParams, wholeObj, _matchVal] = args;
   const val = _get(wholeObj, funcParams as string); // Provide the correct type for funcParams
   if (val === undefined)
     throw new Error(`get_val( ${funcParams} ) not found in ${JSON.stringify(wholeObj)}`);
@@ -60,12 +60,12 @@ function get_val(...args: PatchFuncArgs): PatchFuncRet {
  */
 
 function matches(...args: PatchFuncArgs): PatchFuncRet {
-  const [val, funcParams0, _wholeObj] = args;
+  const [_val, funcParams0, _wholeObj, matchVal] = args;
   const funcParams = (funcParams0 as string).replace(/^\/|\/$/g, '');
   const regexp = new RegExp(funcParams as string, 'g');
   if (!regexp)
     return [] as Val_ish[];
-  const matches = (val as string).matchAll(regexp);
+  const matches = (matchVal as string).matchAll(regexp);
   return [...matches].map(m => m[1]); //=
 }
 //============= ||||||||||||||||| =====================================================================================

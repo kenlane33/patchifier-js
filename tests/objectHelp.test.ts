@@ -1,4 +1,4 @@
-import { recurseTwoSimilarObjects, recurseObject } from "./objectHelp";
+import { recurseTwoSimilarObjects, recurseObject } from "../src/objectHelp";
 
 describe('recurseTwoSimilarObjects', () => {
   test('should call the callback for each key-value pair in the sparse object', () => {

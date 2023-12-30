@@ -1,4 +1,4 @@
-import { getMatch, getMatchParentKey } from './getMatch';
+import { getMatch, getMatchParentKey } from '../src/getMatch';
 const testObj = {
   a: {
     b: 42,

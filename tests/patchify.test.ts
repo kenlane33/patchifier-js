@@ -1,6 +1,6 @@
 // FILEPATH: /c:/work/git/patchifier-js/tests/patchify.test.js
 
-import { applyPatchFuncs } from "./patchify"
+import { applyPatchFuncs } from "../src/patchify"
 
 const { patchify, parseStrFuncAndJsonParams } = require('../src/patchify')
 const { cloneDeep } = require('lodash')

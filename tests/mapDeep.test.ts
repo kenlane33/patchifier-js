@@ -1,5 +1,5 @@
-import { Key_ish, Obj_ish, Val_ish } from "./patchifierTypes"
-import { mapKeysDeep, mapValuesDeep } from "./mapDeep"
+import { Key_ish, Obj_ish, Val_ish } from "../src/patchifierTypes"
+import { mapKeysDeep, mapValuesDeep } from "../src/mapDeep"
 
 function isAnObj(x:any) {
   return x !== null && typeof x === 'object'
