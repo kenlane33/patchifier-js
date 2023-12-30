@@ -1,14 +1,8 @@
 import { cloneDeep, defaultsDeep } from 'lodash'
 import { Obj_ish, Val_ish, PatchFunc, Patch, PatchFuncsByName, PatchFuncByName_NotEmpty } from './patchifierTypes'
-import { getMatch, getMatchParentKey } from './getMatch'
+import { getMatchParentKey } from './getMatch'
 import { addCorePatchFuncs } from './core_PatchFuncs'
-import { isObject } from './patchifierTypes'
-
-
-export function safeJsonParse(str: string): unknown {
-  try { return JSON.parse(str) }
-  catch (e) { return str }
-}
+import { isObject, safeJsonParse, recurseTwoSimilarObjects } from "./objectHelp"
 
 /**
  * 
@@ -23,6 +17,8 @@ export function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, any] 
   const jsonParams = str.match(/\((.*)\)/)?.[1] || '{}' //=
   const func       = (funcName && patchify.patchFuncs[funcName]) || null //=
   const parseParams = safeJsonParse(jsonParams) //=
+  // throw if funcName is not a function
+  if (funcName && !func) throw new Error(`parseStrFuncAndJsonParams() could not find function named "${funcName}"`)
   return [func, parseParams]
 }
 
@@ -35,49 +31,21 @@ export function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, any] 
  * @param matchVal - the value that was matched in the original object to cause this match-patch to be applied
  * @returns the patch object with each function object replaced with its result
  */
-export function applyPatchFuncsOld( wholeObj:Obj_ish, patch: Obj_ish, matchVal: Val_ish  ): Obj_ish {
-  // console.log('===digForFuncs(===\n')
-  function digForFuncs(parentObj: Obj_ish, parentKey?: string) {
-    Object.entries(parentObj).forEach(([key, val]) => {
-      const isObj = isObject(val)
-      const pFnStr = isObj && (val as Obj_ish)['__patchFunc']
-      // console.log('key=', key, ', val=', val, ', isObject(val)='+isObject(val)+', pFnStr=', pFnStr)
-      if (pFnStr) { // if val is an object with a __patchFunc key
-        // console.log( 'parentObj=', parentObj, 'parentKey=', parentKey, 'value=', parentKey && parentObj[parentKey] )
-        const [patchFunc, jsonParams] = parseStrFuncAndJsonParams(pFnStr as string) as [PatchFunc|null, unknown]
-        if (patchFunc && parentObj && key) {
-          // console.log('===applyPatchFuncs(===\n', 'patchFunc=', patchFunc, 'jsonParams=', jsonParams, 'wholeObj=', wholeObj)
-          parentObj[key] = patchFunc(matchVal, jsonParams, wholeObj)
-        }
-      }
-      else if (isObj) digForFuncs(val as Obj_ish, key)
-    })
-  }
-  digForFuncs(patch) 
-  return patch // for chaining if useful
-}
-export function applyPatchFuncs(wholeObj, patch, matchVal) {
-  recurseObject(patch, (obj, key, val) => {
-    const isObj = isObject(val);
-    const pFnStr = isObj && val['__patchFunc'];
+export function applyPatchFuncs(wholeObj:any, patch:any, matchVal:Val_ish) {
+  recurseTwoSimilarObjects(patch, wholeObj, (curPatch, curWholeObj, key, val) => {
+    const isObj = isObject(val)
+    const pFnStr = isObj && val['__patchFunc']
     if (pFnStr) {
-      const [patchFunc, jsonParams] = parseStrFuncAndJsonParams(pFnStr) || [null, null];
-      if (patchFunc && obj && key) {
-        obj[key] = patchFunc(matchVal, jsonParams, wholeObj);
+      const [patchFunc, jsonParams] = parseStrFuncAndJsonParams(pFnStr) || [null, null]
+      // console.log('===applyPatchFuncs()===\n', 'curPatch=', curPatch, 'curWholeObj=', curWholeObj, 'key=', key, 'val=', val, 'jsonParams=', jsonParams )
+      if (patchFunc && curPatch && curWholeObj && key) {
+        const b4 = JSON.stringify(curPatch[key])
+        curPatch[key] = patchFunc(curWholeObj[key], jsonParams, wholeObj, matchVal)
+        // console.log('key=',key, 'curWholeObj[key]=', curWholeObj[key], 'curPatch[key](before)=', b4, 'curPatch[key](after)=', curPatch[key])
       }
     }
   });
-  return patch;
-}
-
-function recurseObject(parObj, callback) {
-  Object.entries(parObj).forEach(([key, value]) => {
-      callback(parObj, key, value);
-
-      if (typeof value === 'object' && value !== null) {
-          recurseObject(value, callback);
-      }
-  });
+  return patch
 }
 
 /**
@@ -125,7 +93,7 @@ patchify.patchFuncs = {} as PatchFuncsByName
   */
 patchify.addPatchFunc = (patchFnByFnNm: (PatchFuncByName_NotEmpty)) => {
   Object.assign(patchify.patchFuncs, patchFnByFnNm) // merge in the new patchFuncs
-};
+}
 
 addCorePatchFuncs() // adds funcs like 'matches', 'curly_vars_to_array', etc.
 

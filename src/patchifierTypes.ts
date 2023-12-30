@@ -25,7 +25,7 @@ export type Patch = { match: string, patch: Obj_ish }
   *                     Examples of funcParams for get_val(): a.b, llm._type, prompt.template, etc.
   * @param wholeObj   - is the whole object that was passed to patchify() ONLY to read from
   */
-export type PatchFuncArgs = [val: Val_ish, funcParams: any, wholeObj: Obj_ish]
+export type PatchFuncArgs = [val: Val_ish, funcParams: any, wholeObj: Obj_ish, matchVal: Val_ish]
 
 /*
   * PatchFuncRet is the type of the return value of a PatchFunc
@@ -63,8 +63,4 @@ export type PatchFuncByName_NotEmpty = Record<string, PatchFunc> & PatchFuncsByN
   * @returns the value at the path specified by the funcParams
   */
 export type ObjCallbackFn = (parObj: Obj_ish, k?: Key_ish, v?: Val_ish) => any;
-export function isObject(item: unknown): boolean {
-  if (item === null || item === undefined) return false
-  return (typeof item === 'object')
-}
 
