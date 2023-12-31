@@ -18,13 +18,13 @@ export type Patch = { match: string, patch: Obj_ish }
 
 /* 
   * PatchFuncArgs is the type of the arguments passed to a PatchFunc
-  * @param val        - is the value of the "match"ed deeply found (via matching _.get() path like a.b.c) 
-  *                     that cause this patch's PatchFunc to be run
+  * @param val        - is the value from the 
   * @param funcParams - is the JSON.parse of the "in-parens" part of the __patchFunc of the patch object 
   *                     The value of a _patchFunc is a string function as in: { _patchFunc: 'get_val("a.b[0]")' }
   *                     Examples of funcParams for get_val(): a.b, llm._type, prompt.template, etc.
   * @param wholeObj   - is the whole object that was passed to patchify() ONLY to read from
-  */
+  * @param matchVal   - is the value of the "match"ed object part deeply found (via matching _.get() path like a.b.c) 
+*/
 export type PatchFuncArgs = [val: Val_ish, funcParams: any, wholeObj: Obj_ish, matchVal: Val_ish]
 
 /*

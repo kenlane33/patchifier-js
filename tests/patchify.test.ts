@@ -73,14 +73,18 @@ describe('patchify with patchFuncs', () => {
         expect(params).toEqual({ x: 3 })
         expect(wholeObj).toEqual(_wholeObj)
         expect(matchVal).toEqual('fooo')
-        return value + params.x
+        const valToReturn = value + params.x
+        expect(valToReturn).toEqual(2+3)
+        return valToReturn
       }
       patchify.patchFuncs.testFunc2  = (value, params, _wholeObj, matchVal) => {
         expect(value).toEqual(wholeObj.b.v)
         expect(params).toEqual({ y: 4 })
         expect(wholeObj).toEqual(_wholeObj)
         expect(matchVal).toEqual('fooo')
-        return value + params.y
+        const valToReturn = value + params.y
+        expect(valToReturn).toEqual(2+4)
+        return valToReturn
       }
   
       const result = applyPatchFuncs(wholeObj, patch, 'fooo')

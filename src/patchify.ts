@@ -41,6 +41,7 @@ export function applyPatchFuncs(wholeObj:any, patch:any, matchVal:Val_ish) {
       if (patchFunc && curPatch && curWholeObj && key) {
         const b4 = JSON.stringify(curPatch[key])
         curPatch[key] = patchFunc(curWholeObj[key], jsonParams, wholeObj, matchVal)
+        console.log('key=',key, ', curWholeObj[key]=', curWholeObj[key], ', matchVal=', matchVal)
         // console.log('key=',key, 'curWholeObj[key]=', curWholeObj[key], 'curPatch[key](before)=', b4, 'curPatch[key](after)=', curPatch[key])
       }
     }
@@ -62,10 +63,10 @@ export function patchify(obj: Obj_ish, matchesToPatch: Patch[] = []): Obj_ish {
   let objCopy = cloneDeep(obj)
   for (const { match, patch } of [...patchify.defaultPatches, ...matchesToPatch]) {
     const [matched, parObj, key ] = getMatchParentKey(objCopy, match)
-    console.log('matched=', matched, 'parObj=', parObj, 'key=', key)
+    // console.log('matched=', matched, 'parObj=', parObj, 'key=', key)
     if (matched) {
       const patchWFuncVals = applyPatchFuncs(objCopy, patch, matched)
-      console.log('patchWFuncVals=', patchWFuncVals)
+      // console.log('patchWFuncVals=', patchWFuncVals)
       objCopy = defaultsDeep(objCopy, patchWFuncVals) as Obj_ish // merge each patch without stomping on existing values
     }
   }

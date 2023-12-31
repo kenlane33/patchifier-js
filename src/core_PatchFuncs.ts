@@ -22,21 +22,16 @@ function curly_vars_to_array(...args: PatchFuncArgs): PatchFuncRet {
 }
 /**
  * 
- * @param args: [val, funcParams, wholeObj], 
- *               val        - is the value of the "match"ed deeply found (via matching _.get() path like a.b.c) 
- *                            that cause this patch's PatchFunc to be run
- *               funcParams - is the JSON.parse of the "in-parens" part of the __patchFunc of the patch object 
- *                            The value of a _patchFunc is a string function as in: { _patchFunc: 'get_val("a.b[0]")' }
- *                            Examples of funcParams for get_val(): a.b, llm._type, prompt.template, etc.
- *              wholeObj    - is the whole object that was passed to patchify() ONLY to read from
+ * @param args: 
  * @returns the value at the path specified by the funcParams
+ * @throws an Error if the value at the path specified by the funcParams is undefined
  */
 function get_val(...args: PatchFuncArgs): PatchFuncRet {
-  const [_val, funcParams, wholeObj, _matchVal] = args;
-  const val = _get(wholeObj, funcParams as string); // Provide the correct type for funcParams
+  const [_val, funcParams='', wholeObj={}, _matchVal=null] = args // destructuring assignment
+  const val = _get(wholeObj, funcParams as string) // use lodash's get() to get the value at the "root.branch.leaf" path
   if (val === undefined)
-    throw new Error(`get_val( ${funcParams} ) not found in ${JSON.stringify(wholeObj)}`);
-  return val; //=
+    throw new Error(`get_val( ${funcParams} ) not found in ${JSON.stringify(wholeObj)}`)
+  else return val
 }
 /**
  * 
@@ -60,9 +55,9 @@ function get_val(...args: PatchFuncArgs): PatchFuncRet {
  */
 
 function matches(...args: PatchFuncArgs): PatchFuncRet {
-  const [_val, funcParams0, _wholeObj, matchVal] = args;
-  const funcParams = (funcParams0 as string).replace(/^\/|\/$/g, '');
-  const regexp = new RegExp(funcParams as string, 'g');
+  const [_val, funcParams0, _wholeObj, matchVal] = args // destructuring assignment
+  const funcParams = (funcParams0 as string).replace(/^\/|\/$/g, '') // extract the regexp from the funcParams
+  const regexp = new RegExp(funcParams as string, 'g') // create a regexp from the funcParams
   if (!regexp)
     return [] as Val_ish[];
   const matches = (matchVal as string).matchAll(regexp);
