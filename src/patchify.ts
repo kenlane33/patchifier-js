@@ -1,8 +1,8 @@
-import { cloneDeep, defaultsDeep } from 'lodash'
+import {  get as _get, cloneDeep, defaultsDeep, mergeWith, isObject } from 'lodash'
 import { Obj_ish, Val_ish, PatchFunc, Patch, PatchFuncsByName, PatchFuncByName_NotEmpty } from './patchifierTypes'
 import { getMatchParentKey } from './getMatch'
 import { addCorePatchFuncs } from './core_PatchFuncs'
-import { isObject, safeJsonParse, recurseTwoSimilarObjects } from "./objectHelp"
+import { safeJsonParse, recurseTwoSimilarObjects } from "./objectHelp"
 
 /**
  * 
@@ -58,7 +58,29 @@ export function applyPatchFuncs(wholeObj:any, patch:any, matchVal:Val_ish) {
  * @param matchesToPatch - array of {match:string, patch:object} objects that deeply apply a patch object if match (a matching path) is found in obj
  * @returns the patched object
  */
-export function patchify(obj: Obj_ish, matchesToPatch: Patch[] = []): Obj_ish {
+export function patchifyNew(obj, patches=[]) {
+  patches = [...patchify.defaultPatches, ...patches]
+  let patchedObj = cloneDeep(obj);
+
+  patches.forEach(patch => {
+    const match = _get(patchedObj, patch.match)
+    if (match) {
+      mergeWith(patchedObj, patch.patch, (objVal, srcVal, key) => {
+        if (srcVal.__patchFunc) {
+          const [patchFunc, jsonParams] = parseStrFuncAndJsonParams(srcVal.__patchFunc) || [null, null]
+          return patchFunc(match, jsonParams, patchedObj, match)
+        } else {
+          //  if objVal and srcVal are objects return them merged, otherwise return srcVal
+          return (isObject(objVal) && isObject(srcVal)) ? defaultsDeep(srcVal, objVal) : srcVal
+
+        }
+      })
+    }
+  })
+
+  return patchedObj;
+}
+export function patchify(obj: Obj_ish, matchesToPatch: Patch[] = [], canStomp=false): Obj_ish {
   // const objCopy = JSON.parse(JSON.stringify(obj))
   let objCopy = cloneDeep(obj)
   for (const { match, patch } of [...patchify.defaultPatches, ...matchesToPatch]) {
@@ -67,7 +89,11 @@ export function patchify(obj: Obj_ish, matchesToPatch: Patch[] = []): Obj_ish {
     if (matched) {
       const patchWFuncVals = applyPatchFuncs(objCopy, patch, matched)
       // console.log('patchWFuncVals=', patchWFuncVals)
-      objCopy = defaultsDeep(objCopy, patchWFuncVals) as Obj_ish // merge each patch without stomping on existing values
+      objCopy = ((canStomp) ? 
+        Object.assign(objCopy, patchWFuncVals)
+        :
+        defaultsDeep( objCopy, patchWFuncVals)
+      ) as Obj_ish // merge each patch without stomping on existing values
     }
   }
   return objCopy

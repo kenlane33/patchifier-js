@@ -13,11 +13,18 @@ describe('patchify', () => {
     expect(result).not.toBe(obj)
   })
 
-  test('should apply a patch to the input object', () => {
+  test('should apply an object patch to the input object', () => {
     const obj = { a: 1, b: { c: 2 } }
     const patch = { match: 'b', patch: {b: { d: 3 }} }
     const result = patchify(obj, [patch])
     expect(result).toEqual({ a: 1, b: { c: 2, d: 3 } })
+  })
+
+  test('should override a value on the object', () => {
+    const obj = { a: 1, b: { c: 2 } }
+    const patch = { match: 'b', patch: {b: { c: 3333 }} }
+    const result = patchify(obj, [patch], true)
+    expect(result).toEqual({ a: 1, b: { c: 3333 } })
   })
 
   test('should apply multiple patches to the input object', () => {

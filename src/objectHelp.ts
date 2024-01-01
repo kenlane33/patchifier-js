@@ -1,7 +1,3 @@
-export function isObject(item: unknown): boolean {
-  if (item === null || item === undefined) return false;
-  return (typeof item === 'object');
-}
 
 export function safeJsonParse(str: string): unknown {
   try { return JSON.parse(str)} 
