@@ -14,12 +14,14 @@ export function recurseObject(parObj, callback) {
   })
 }
 
-export const recurseTwoSimilarObjects = (sparseObj, fullObj, callback: (sparseObj, fullObj, key, value) => void) => {
-  Object.entries(sparseObj).forEach(([key, value]) => {
-    callback(sparseObj, fullObj, key, value)
+export const recurseTwoSimilarObjects = (sparseObj, fullObj, callback: (sparseObj, fullObj, key, sparseVal, fullVal) => void) => {
+  Object.entries(sparseObj).forEach(([key, sparseVal]) => {
+    const fullVal = fullObj?.[key]
+    // console.log('sparseObj=', sparseObj, 'fullObj=', fullObj, 'key=', key, 'sparseVal=', sparseVal, 'fullVal=', fullVal)
+    callback(sparseObj, fullObj, key, sparseVal, fullVal)
 
-    if (typeof value === 'object' && value !== null) {
-      recurseTwoSimilarObjects(value, fullObj[key], callback)
+    if (typeof sparseVal === 'object' && sparseVal !== null) {
+      recurseTwoSimilarObjects(sparseVal, fullObj[key], callback)
     }
   })
 }

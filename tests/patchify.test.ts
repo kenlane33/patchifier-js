@@ -1,11 +1,8 @@
-// FILEPATH: /c:/work/git/patchifier-js/tests/patchify.test.js
-
+import { Val_ish, Obj_ish, PatchFunc } from "../src/patchifierTypes"
 import { applyPatchFuncs } from "../src/patchify"
+import { patchify, parseStrFuncAndJsonParams } from "../src/patchify"
 
-const { patchify, parseStrFuncAndJsonParams } = require('../src/patchify')
-const { cloneDeep } = require('lodash')
-
-describe('patchify', () => {
+describe('patchify()', () => {
   test('should return a deep clone of the input object if no patches are provided', () => {
     const obj = { a: 1, b: { c: 2 } }
     const result = patchify(obj)
@@ -35,8 +32,8 @@ describe('patchify', () => {
   })
 })
 
-describe('patchify with patchFuncs', () => {
-  describe('parseStrFuncAndJsonParams', () => {
+describe('using the patchFuncs system', () => {
+  describe('parseStrFuncAndJsonParams()', () => {
     test('should return null and an empty object for an empty string', () => {
       const [func, params] = parseStrFuncAndJsonParams('')
       expect(func).toBeNull()
@@ -44,7 +41,7 @@ describe('patchify with patchFuncs', () => {
     })
   
     test('should return the correct function and parameters for a valid string', () => {
-      const testFunc = () => {}
+      const testFunc:PatchFunc = (_val: Val_ish, _funcParams: any, _wholeObj: Obj_ish, _matchVal: Val_ish) => {}
       patchify.patchFuncs.testFunc = testFunc
       const [func, params] = parseStrFuncAndJsonParams('testFunc({"a": 1})')
       expect(func).toBe(testFunc)
@@ -68,7 +65,7 @@ describe('patchify with patchFuncs', () => {
     })
   })
 
-  describe('applyPatchFuncs', () => {
+  describe('applyPatchFuncs()', () => {
     test('should apply multiple patch functions to the matched value in the object', () => {
       const wholeObj = { a: 1, b: { u: 2, v:2 } };
       const patch = { b: {u: { __patchFunc: 'testFunc1({"x": 3})'}, v:{__patchFunc: 'testFunc2({"y": 4})' }}}

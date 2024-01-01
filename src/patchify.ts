@@ -41,8 +41,7 @@ export function applyPatchFuncs(wholeObj:any, patch:any, matchVal:Val_ish) {
       if (patchFunc && curPatch && curWholeObj && key) {
         const b4 = JSON.stringify(curPatch[key])
         curPatch[key] = patchFunc(curWholeObj[key], jsonParams, wholeObj, matchVal)
-        console.log('key=',key, ', curWholeObj[key]=', curWholeObj[key], ', matchVal=', matchVal)
-        // console.log('key=',key, 'curWholeObj[key]=', curWholeObj[key], 'curPatch[key](before)=', b4, 'curPatch[key](after)=', curPatch[key])
+        // console.log('key=',key, ', curWholeObj[key]=', curWholeObj[key], ', matchVal=', matchVal)
       }
     }
   });
@@ -68,10 +67,10 @@ export function patchify(obj: Obj_ish, matchesToPatch: Patch[] = [], canStomp=fa
       const patchWFuncVals = applyPatchFuncs(objCopy, patch, matched)
       // console.log('patchWFuncVals=', patchWFuncVals)
       objCopy = ((canStomp) ? 
-        Object.assign(objCopy, patchWFuncVals)
+        Object.assign(objCopy, patchWFuncVals) // merge each patch, stomping on existing values
         :
-        defaultsDeep( objCopy, patchWFuncVals)
-      ) as Obj_ish // merge each patch without stomping on existing values
+        defaultsDeep( objCopy, patchWFuncVals) // merge each patch without stomping on existing values
+      ) as Obj_ish 
     }
   }
   return objCopy
