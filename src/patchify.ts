@@ -58,28 +58,6 @@ export function applyPatchFuncs(wholeObj:any, patch:any, matchVal:Val_ish) {
  * @param matchesToPatch - array of {match:string, patch:object} objects that deeply apply a patch object if match (a matching path) is found in obj
  * @returns the patched object
  */
-export function patchifyNew(obj, patches=[]) {
-  patches = [...patchify.defaultPatches, ...patches]
-  let patchedObj = cloneDeep(obj);
-
-  patches.forEach(patch => {
-    const match = _get(patchedObj, patch.match)
-    if (match) {
-      mergeWith(patchedObj, patch.patch, (objVal, srcVal, key) => {
-        if (srcVal.__patchFunc) {
-          const [patchFunc, jsonParams] = parseStrFuncAndJsonParams(srcVal.__patchFunc) || [null, null]
-          return patchFunc(match, jsonParams, patchedObj, match)
-        } else {
-          //  if objVal and srcVal are objects return them merged, otherwise return srcVal
-          return (isObject(objVal) && isObject(srcVal)) ? defaultsDeep(srcVal, objVal) : srcVal
-
-        }
-      })
-    }
-  })
-
-  return patchedObj;
-}
 export function patchify(obj: Obj_ish, matchesToPatch: Patch[] = [], canStomp=false): Obj_ish {
   // const objCopy = JSON.parse(JSON.stringify(obj))
   let objCopy = cloneDeep(obj)
