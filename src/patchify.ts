@@ -31,7 +31,7 @@ export function parseStrFuncAndJsonParams( str:string ) : [PatchFunc|null, any] 
  * @param matchVal - the value that was matched in the original object to cause this match-patch to be applied
  * @returns the patch object with each function object replaced with its result
  */
-export function applyPatchFuncs(wholeObj:any, patch:any, matchVal:Val_ish) {
+export function applyPatchFuncs(wholeObj:any, patch:any, matchVal:Val_ish):any {
   recurseTwoSimilarObjects(patch, wholeObj, (curPatch, curWholeObj, key, val) => {
     const isObj = isObject(val)
     const pFnStr = isObj && val['__patchFunc']
@@ -82,12 +82,12 @@ patchify.defaultPatches = [] as Patch[]
   * patchify.addPatch() adds a patch or array of patches to the defaultPatches array.
   * @param patch_s_ - a single Patch object or an array of Patch objects
   */
-patchify.addPatch = (patch_s_: (Patch | Patch[])) => {
+patchify.addPatch = (patch_s_: (Patch | Patch[])):void => {
   if (Array.isArray(patch_s_))
     return patch_s_.forEach(patchify.addPatch)
   else
     patchify.defaultPatches.push(patch_s_)
-};
+}
 patchify.patchFuncs = {} as PatchFuncsByName
 /* 
   * patchify.addPatchFunc() adds a object of patchFuncsByNm to the static patchify.patchFuncs object.
