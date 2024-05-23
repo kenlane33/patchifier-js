@@ -1,7 +1,8 @@
 {
-  "name": "patchifier-js",
+  "name": "@tibacom/patchifier",
   "version": "1.0.0",
   "description": "Deeply patch-ify js Objects where they deeply match a matchObj.",
+  "exports": "./index.js",
   "main": "index.js",
   "scripts": {
     "test": "jest"
