@@ -1,6 +1,6 @@
 {
   "name": "@tibacom/patchifier",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Deeply patch-ify js Objects where they deeply match a matchObj.",
   "exports": "./src/index.ts",
   "type": "module",
