@@ -1,8 +1,5 @@
 {
   "name": "@tibacom/patchifier",
   "version": "1.0.0",
-  "exports": "./src/index.ts",
-  "dependencies": {
-    "lodash": "npm:lodash@^4.17.21"
-  }
+  "exports": "./src/index.ts"
 }
